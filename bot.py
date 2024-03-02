@@ -103,7 +103,7 @@ async def dni(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 if persona:
                     # Construir el mensaje con la información obtenida
                     message = (
-                        f"[Desarrollador](https://t.me/DuxPE) - [Codex Bot]\n\n"
+                        f"[Desarrollador](https://t.me/CodexPE) - [Codex Bot]\n\n"
                         f"Información del DNI *{dni}*:\n"
                         f"Nombres Completos: *{persona.get('nombre_completo', '')}*\n"
                         f"Nombres: *{persona.get('nombres', '')}*\n"
@@ -149,7 +149,7 @@ async def ruc(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 if persona:
                     # Construir el mensaje con la información obtenida
                     message = (
-                        f"[Desarrollador](https://t.me/DuxPE) - [Codex Bot]\n\n"
+                        f"[Desarrollador](https://t.me/CodexPE) - [Codex Bot]\n\n"
                         f"*Información del RUC {ruc_number}:*\n"
                         f"Nombres Completos: * {persona.get('nombre', '')}*\n"
                         f"Estado: *{persona.get('estado', '')}*\n"
