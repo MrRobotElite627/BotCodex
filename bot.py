@@ -7,19 +7,8 @@ import re
 import urllib3
 from urllib3.exceptions import InsecureRequestWarning
 import warnings
+import asyncio
 
-
-#lock_file_path = "C:\\Users\\MAYRA\\Desktop\\Bot\\bot.lock"
-#
-#try:
-#    os.remove(lock_file_path)
-#    print("El archivo bot.lock se ha eliminado correctamente.")
-#except FileNotFoundError:
-#    print("El archivo bot.lock no existe.")
-#except Exception as e:
-#    print(f"Error al intentar eliminar el archivo bot.lock: {e}")
-    
-    
 # Conexión a la base de datos SQLite
 conn = sqlite3.connect('usuarios.db')
 cursor = conn.cursor()
@@ -32,6 +21,8 @@ cursor.execute('''CREATE TABLE IF NOT EXISTS usuarios (
                 registered BOOLEAN)''')
 conn.commit()
 
+# Variable para controlar si el bot está obteniendo actualizaciones
+is_fetching_updates = False
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Función para el comando /start."""
@@ -226,27 +217,30 @@ async def ruc(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
             await update.message.reply_text(message, parse_mode='Markdown')
 
-if os.getenv("BOT_RUNNING"):
-    print("¡Ya hay una instancia del bot en ejecución!")
-    print("Si no es así, asegúrate de reiniciar tus servicios en Render.")
-    exit()
 
-# Configurar la variable de entorno BOT_RUNNING para indicar que el bot está en funcionamiento
-os.environ["BOT_RUNNING"] = "True"
+async def fetch_updates():
+    global is_fetching_updates
+    while True:
+        if not is_fetching_updates:
+            try:
+                is_fetching_updates = True
+                await app.bot.get_updates()
+            except Exception as e:
+                print(f"Error al obtener actualizaciones: {e}")
+            finally:
+                is_fetching_updates = False
+        await asyncio.sleep(5)
 
-app = ApplicationBuilder().token(
-    "7080590731:AAHbuMhLFzfei7xB8jSGg5_bj1oEX7GHZmI").build()
+if __name__ == "__main__":
+    app = ApplicationBuilder().token(
+        "TU_TOKEN").build()
 
-app.add_handler(CommandHandler("start", start))
-app.add_handler(CommandHandler("me", me))
-app.add_handler(CommandHandler("cmds", cmds))
-app.add_handler(CommandHandler("dni", dni))
-app.add_handler(CommandHandler("ruc", ruc))
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("me", me))
+    app.add_handler(CommandHandler("cmds", cmds))
+    app.add_handler(CommandHandler("dni", dni))
+    app.add_handler(CommandHandler("ruc", ruc))
 
-# Crear el archivo bot.lock
-#with open(lock_file_path, "w") as lock_file:
-#    pass
-
-app.run_polling()
-# Restaurar la variable de entorno BOT_RUNNING al valor predeterminado al salir
-os.environ["BOT_RUNNING"] = "False"
+    loop = asyncio.get_event_loop()
+    loop.create_task(fetch_updates())
+    app.run_polling()
