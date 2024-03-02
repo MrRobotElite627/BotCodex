@@ -119,7 +119,7 @@ async def dni(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 'Authorization': 'Bearer 1924f8d50d2981a8af16013036a34303dbceee77b0914a3c1f1d598b0a4d135c'
             }
             data = {'dni': dni}
-            response = requests.post(url, headers=headers, json=data)
+            response = requests.post(url, headers=headers, json=data, proxies=None)
 
             # Procesar la respuesta de la API
             if response.status_code == 200:
@@ -148,7 +148,7 @@ async def dni(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                         # Reemplazar TU_TOKEN con tu token de acceso
                         'Authorization': 'Bearer apis-token-1.aTSI1U7KEuT-6bbbCguH-4Y8TI6KS73N'
                     }
-                    response = requests.get(url, headers=headers, verify=False)
+                    response = requests.get(url, headers=headers, verify=False, proxies=None)
 
                     # Procesar la respuesta de la API
                     if response.status_code == 200:
@@ -197,7 +197,7 @@ async def ruc(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 # Reemplazar TU_TOKEN con tu token de acceso
                 'Authorization': 'Bearer apis-token-1.aTSI1U7KEuT-6bbbCguH-4Y8TI6KS73N'
             }
-            response = requests.get(url, headers=headers, verify=False)
+            response = requests.get(url, headers=headers, verify=False, proxies=None)
 
             # Procesar la respuesta de la API
             if response.status_code == 200:
