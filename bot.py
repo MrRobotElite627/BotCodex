@@ -1,27 +1,21 @@
+import os
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import sqlite3
 import requests
 import re
-import fcntl
-import os
-import sys
 
+lock_file_path = "C:\\Users\\MAYRA\\Desktop\\Bot\\bot.lock"
 
-# Obtener el directorio actual del script
-current_directory = os.path.dirname(os.path.abspath(__file__))
-lockfile_path = os.path.join(current_directory, "bot.lock")
-
-# Tratar de adquirir el bloqueo de archivo
 try:
-    lockfile = open(lockfile_path, "w")
-    fcntl.lockf(lockfile, fcntl.LOCK_EX | fcntl.LOCK_NB)
-except IOError:
-    # Si no se puede adquirir el bloqueo, significa que otra instancia del bot ya está en ejecución.
-    print("Otra instancia del bot ya está en ejecución.")
-    sys.exit(1)
+    os.remove(lock_file_path)
+    print("El archivo bot.lock se ha eliminado correctamente.")
+except FileNotFoundError:
+    print("El archivo bot.lock no existe.")
+except Exception as e:
+    print(f"Error al intentar eliminar el archivo bot.lock: {e}")
     
-
+    
 # Conexión a la base de datos SQLite
 conn = sqlite3.connect('usuarios.db')
 cursor = conn.cursor()
