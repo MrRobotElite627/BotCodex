@@ -233,7 +233,7 @@ async def fetch_updates():
 
 if __name__ == "__main__":
     app = ApplicationBuilder().token(
-        "TU_TOKEN").build()
+        "7080590731:AAHbuMhLFzfei7xB8jSGg5_bj1oEX7GHZmI").build()
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("me", me))
