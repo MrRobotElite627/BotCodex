@@ -4,6 +4,9 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import sqlite3
 import requests
 import re
+import urllib3
+from urllib3.exceptions import InsecureRequestWarning
+import warnings
 
 lock_file_path = "C:\\Users\\MAYRA\\Desktop\\Bot\\bot.lock"
 
@@ -60,6 +63,14 @@ def registrar_usuario(user_id, first_name):
     cursor.execute(
         "INSERT INTO usuarios (user_id, first_name, registered) VALUES (?, ?, 1)", (user_id, first_name))
     conn.commit()
+    
+    if not os.path.exists("usuarios_registrados.txt"):
+        with open("usuarios_registrados.txt", "w"):
+            pass  # Crear el archivo si no existe
+
+    # Guardar la información del usuario en el archivo de texto
+    with open("usuarios_registrados.txt", "a") as file:
+        file.write(f"User ID: {user_id}, First Name: {first_name}\n")
 
 
 def verificar_registro(user_id):
@@ -125,8 +136,37 @@ async def dni(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                         f"Codigo de verificaion: *{persona.get('codigo_verificacion', '')}*\n\n"
                         f"By: {first_name}"
                     )
-                    print(message)
+                    print(f"\nEl usuario: {first_name}\nBusco el DNI: {dni}")
                 else:
+                    warnings.simplefilter('ignore', InsecureRequestWarning)
+                    url = f"https://api.apis.net.pe/v1/dni?numero={dni}"
+                    headers = {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        # Reemplazar TU_TOKEN con tu token de acceso
+                        'Authorization': 'Bearer apis-token-1.aTSI1U7KEuT-6bbbCguH-4Y8TI6KS73N'
+                    }
+                    response = requests.get(url, headers=headers, verify=False)
+
+                    # Procesar la respuesta de la API
+                    if response.status_code == 200:
+                        persona = response.json()
+                        if persona:
+                            # Construir el mensaje con la información obtenida
+                            message = (
+                                f"[Desarrollador](https://t.me/CodexPE) - [Codex Bot]\n\n"
+                                f"*Información del DNI {dni}:*\n"
+                                f"Nombres Completos: * {persona.get('nombre', '')}*\n"
+                                f"Nombres: *{persona.get('nombres', '')}*\n"
+                                f"Apellido paterno: *{persona.get('apellidoPaterno', '')}*\n"
+                                f"Apellido materno: *{persona.get('apellidoMaterno', '')}*\n"
+                                f"Codigo de verificaion: *none*\n\n"
+                                f"By: {first_name}"
+                            )
+                            print(f"\nEl usuario: {first_name}\nBusco el DNI: {dni}")
+
+                        else:
+                            message = "No se encontraron datos para el RUC proporcionado."
                     message = "No se encontraron datos para el DNI proporcionado."
             else:
                 message = "Hubo un error al obtener la información del DNI. Por favor, intenta nuevamente más tarde."
@@ -147,6 +187,7 @@ async def ruc(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             await update.message.reply_text("Por favor ingresa un RUC válido.")
         else:
             # Consulta a la API para obtener la información del RUC
+            warnings.simplefilter('ignore', InsecureRequestWarning)
             url = f"https://api.apis.net.pe/v1/ruc?numero={ruc_number}"
             headers = {
                 'Accept': 'application/json',
@@ -174,8 +215,9 @@ async def ruc(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                         f"Departamento: *{persona.get('departamento', '')}*\n"
                         f"Ubigeo: *{persona.get('ubigeo', '')}*\n\n"
                         f"By: {first_name}"
-
                     )
+                    print(f"\nEl usuario: {first_name}\nBusco el RUC: {ruc_number}")
+                    
                 else:
                     message = "No se encontraron datos para el RUC proporcionado."
             else:
@@ -193,5 +235,8 @@ app.add_handler(CommandHandler("cmds", cmds))
 app.add_handler(CommandHandler("dni", dni))
 app.add_handler(CommandHandler("ruc", ruc))
 
+# Crear el archivo bot.lock
+with open(lock_file_path, "w") as lock_file:
+    pass
 
 app.run_polling()
