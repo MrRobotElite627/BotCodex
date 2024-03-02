@@ -8,15 +8,16 @@ import urllib3
 from urllib3.exceptions import InsecureRequestWarning
 import warnings
 
-lock_file_path = "C:\\Users\\MAYRA\\Desktop\\Bot\\bot.lock"
 
-try:
-    os.remove(lock_file_path)
-    print("El archivo bot.lock se ha eliminado correctamente.")
-except FileNotFoundError:
-    print("El archivo bot.lock no existe.")
-except Exception as e:
-    print(f"Error al intentar eliminar el archivo bot.lock: {e}")
+#lock_file_path = "C:\\Users\\MAYRA\\Desktop\\Bot\\bot.lock"
+#
+#try:
+#    os.remove(lock_file_path)
+#    print("El archivo bot.lock se ha eliminado correctamente.")
+#except FileNotFoundError:
+#    print("El archivo bot.lock no existe.")
+#except Exception as e:
+#    print(f"Error al intentar eliminar el archivo bot.lock: {e}")
     
     
 # Conexión a la base de datos SQLite
@@ -225,6 +226,13 @@ async def ruc(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
             await update.message.reply_text(message, parse_mode='Markdown')
 
+if os.getenv("BOT_RUNNING"):
+    print("¡Ya hay una instancia del bot en ejecución!")
+    print("Si no es así, asegúrate de reiniciar tus servicios en Render.")
+    exit()
+
+# Configurar la variable de entorno BOT_RUNNING para indicar que el bot está en funcionamiento
+os.environ["BOT_RUNNING"] = "True"
 
 app = ApplicationBuilder().token(
     "7080590731:AAHbuMhLFzfei7xB8jSGg5_bj1oEX7GHZmI").build()
@@ -236,7 +244,9 @@ app.add_handler(CommandHandler("dni", dni))
 app.add_handler(CommandHandler("ruc", ruc))
 
 # Crear el archivo bot.lock
-with open(lock_file_path, "w") as lock_file:
-    pass
+#with open(lock_file_path, "w") as lock_file:
+#    pass
 
 app.run_polling()
+# Restaurar la variable de entorno BOT_RUNNING al valor predeterminado al salir
+os.environ["BOT_RUNNING"] = "False"
