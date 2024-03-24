@@ -1,26 +1,8 @@
-import os
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import sqlite3
 import requests
 import re
-import urllib3
-from urllib3.exceptions import InsecureRequestWarning
-import warnings
-
-
-
-#lock_file_path = "C:\\Users\\MAYRA\\Desktop\\Bot\\bot.lock"
-#
-#try:
-#    os.remove(lock_file_path)
-#    print("El archivo bot.lock se ha eliminado correctamente.")
-#except FileNotFoundError:
-#    print("El archivo bot.lock no existe.")
-#except Exception as e:
-#    print(f"Error al intentar eliminar el archivo bot.lock: {e}")
-    
-    
 # Conexión a la base de datos SQLite
 conn = sqlite3.connect('usuarios.db')
 cursor = conn.cursor()
@@ -65,14 +47,6 @@ def registrar_usuario(user_id, first_name):
     cursor.execute(
         "INSERT INTO usuarios (user_id, first_name, registered) VALUES (?, ?, 1)", (user_id, first_name))
     conn.commit()
-    
-    if not os.path.exists("usuarios_registrados.txt"):
-        with open("usuarios_registrados.txt", "w"):
-            pass  # Crear el archivo si no existe
-
-    # Guardar la información del usuario en el archivo de texto
-    with open("usuarios_registrados.txt", "a") as file:
-        file.write(f"User ID: {user_id}, First Name: {first_name}\n")
 
 
 def verificar_registro(user_id):
@@ -89,8 +63,8 @@ async def cmds(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "/start - Iniciar el bot\n"
         "/me - Registrarse\n"
         "/cmds - Ver lista de comandos\n"
-        "/dni 12345678 \n"
-        "/ruc 10/20 \n"
+        "/dni 12345678\n"
+        "/ruc 10/20\n"
         "/cmds - Ver lista de comandos\n"
 
     )
@@ -101,78 +75,85 @@ async def dni(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Función para el comando /dni."""
     # Obtener el argumento del mensaje
     dni = context.args[0] if context.args else None
-    first_name = update.effective_user.first_name
-    user_id = update.effective_user.id
 
-    if not verificar_registro(user_id):
-        await update.message.reply_text("Por favor ingresa el comando /me para reguistarce")
+    if dni is None or not re.match(r'^\d{8}$', dni):
+        await update.message.reply_text("Por favor ingresa un DNI válido de 8 dígitos.")
     else:
-        if dni is None or not re.match(r'^\d{8}$', dni):
-            await update.message.reply_text("Por favor ingresa un DNI válido de 8 dígitos.")
-        else:
-            # Consulta a la API para obtener la información del DNI
-            url = 'https://apiperu.dev/api/dni'
-            headers = {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                # Reemplazar TU_TOKEN con tu token de acceso
-                'Authorization': 'Bearer 1924f8d50d2981a8af16013036a34303dbceee77b0914a3c1f1d598b0a4d135c'
-            }
-            data = {'dni': dni}
-            response = requests.post(url, headers=headers, json=data, proxies=None)
+        # Consulta a la API para obtener la información del DNI
+        url = 'https://apiperu.dev/api/dni'
+        headers = {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            # Reemplazar TU_TOKEN con tu token de acceso
+            'Authorization': 'Bearer 1924f8d50d2981a8af16013036a34303dbceee77b0914a3c1f1d598b0a4d135c'
+        }
+        data = {'dni': dni}
+        response = requests.post(url, headers=headers, json=data)
 
-            # Procesar la respuesta de la API
-            if response.status_code == 200:
-                persona = response.json().get('data', {})
-                first_name = update.effective_user.first_name
+        # Procesar la respuesta de la API
+        if response.status_code == 200:
+            persona = response.json().get('data', {})
+            first_name = update.effective_user.first_name
 
-                if persona:
-                    # Construir el mensaje con la información obtenida
-                    message = (
-                        f"[Desarrollador](https://t.me/CodexPE) - [Codex Bot]\n\n"
-                        f"Información del DNI *{dni}*:\n"
-                        f"Nombres Completos: *{persona.get('nombre_completo', '')}*\n"
-                        f"Nombres: *{persona.get('nombres', '')}*\n"
-                        f"Apellido paterno: *{persona.get('apellido_paterno', '')}*\n"
-                        f"Apellido materno: *{persona.get('apellido_materno', '')}*\n"
-                        f"Codigo de verificaion: *{persona.get('codigo_verificacion', '')}*\n\n"
-                        f"By: {first_name}"
-                    )
-                    print(f"\nEl usuario: {first_name}\nBusco el DNI: {dni}")
-                else:
-                    warnings.simplefilter('ignore', InsecureRequestWarning)
-                    url = f"https://api.apis.net.pe/v1/dni?numero={dni}"
-                    headers = {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        # Reemplazar TU_TOKEN con tu token de acceso
-                        'Authorization': 'Bearer apis-token-1.aTSI1U7KEuT-6bbbCguH-4Y8TI6KS73N'
-                    }
-                    response = requests.get(url, headers=headers, verify=False, proxies=None)
-
-                    # Procesar la respuesta de la API
-                    if response.status_code == 200:
-                        persona = response.json()
-                        if persona:
-                            # Construir el mensaje con la información obtenida
-                            message = (
-                                f"[Desarrollador](https://t.me/CodexPE) - [Codex Bot]\n\n"
-                                f"*Información del DNI {dni}:*\n"
-                                f"Nombres Completos: * {persona.get('nombre', '')}*\n"
-                                f"Nombres: *{persona.get('nombres', '')}*\n"
-                                f"Apellido paterno: *{persona.get('apellidoPaterno', '')}*\n"
-                                f"Apellido materno: *{persona.get('apellidoMaterno', '')}*\n"
-                                f"Codigo de verificaion: *none*\n\n"
-                                f"By: {first_name}"
-                            )
-                            print(f"\nEl usuario: {first_name}\nBusco el DNI: {dni}")
-
-                        else:
-                            message = "No se encontraron datos para el RUC proporcionado."
-                    message = "No se encontraron datos para el DNI proporcionado."
+            if persona:
+                # Construir el mensaje con la información obtenida
+                message = (
+                    "[Desarrollador](https://t.me/CodexPE) | [Codex Bot]"
+                    f"\n\nInformación del DNI *{dni}*:\n"
+                    f"Nombres Completos: *{persona.get('nombre_completo', '')}*\n"
+                    f"Nombres: *{persona.get('nombres', '')}*\n"
+                    f"Apellido paterno: *{persona.get('apellido_paterno', '')}*\n"
+                    f"Apellido materno: *{persona.get('apellido_materno', '')}*\n"
+                    f"Codigo de verificaion: *{persona.get('codigo_verificacion', '')}*\n\n"
+                    f"By: {first_name}"
+                    
+                    # f"Fecha de nacimiento: {persona.get('fecha_nacimiento', '')}\n"
+                    # f"Ubigeo: {persona.get('ubigeo', '')}\n"
+                    # f"Dirección: {persona.get('direccion', '')}\n"
+                    # f"Distrito: {persona.get('distrito', '')}\n"
+                    # f"Provincia: {persona.get('provincia', '')}\n"
+                    # f"Departamento: {persona.get('departamento', '')}\n"
+                )
+                print(message)
             else:
-                message = "Hubo un error al obtener la información del DNI. Por favor, intenta nuevamente más tarde."
-            await update.message.reply_text(message, parse_mode='Markdown')
+                url = f"https://api.apis.net.pe/v1/dni?numero={dni}"
+                headers = {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    # Reemplazar TU_TOKEN con tu token de acceso
+                    'Authorization': 'Bearer apis-token-1.aTSI1U7KEuT-6bbbCguH-4Y8TI6KS73N'
+                }
+                response = requests.get(url, headers=headers, verify=False)
+
+                # Procesar la respuesta de la API
+                if response.status_code == 200:
+                    persona = response.json()
+                    if persona:
+                        message = (
+                            "[Desarrollador](https://t.me/CodexPE) | [Codex Bot]"
+                            f"\n\nInformación del DNI *{dni}*:\n"
+                            f"Nombres Completos: *{persona.get('nombre', '')}*\n"
+                            f"Nombres: *{persona.get('nombres', '')}*\n"
+                            f"Apellido paterno: *{persona.get('apellidoPaterno', '')}*\n"
+                            f"Apellido materno: *{persona.get('apellidoMaterno', '')}*\n"
+                            f"Codigo de verificaion: *null*\n\n"
+                            f"By: {first_name}"
+                            
+                            # f"Fecha de nacimiento: {persona.get('fecha_nacimiento', '')}\n"
+                            # f"Ubigeo: {persona.get('ubigeo', '')}\n"
+                            # f"Dirección: {persona.get('direccion', '')}\n"
+                            # f"Distrito: {persona.get('distrito', '')}\n"
+                            # f"Provincia: {persona.get('provincia', '')}\n"
+                            # f"Departamento: {persona.get('departamento', '')}\n"
+                            )
+                        print(message)                        
+                    else:
+                        message = "No se encontraron datos para el DNI proporcionado."
+        else:
+            message = "Hubo un error al obtener la información del DNI. Por favor, intenta nuevamente más tarde."
+
+        # Enviar el mensaje al usuario
+        await update.message.reply_text(message, parse_mode='Markdown')
 
 
 async def ruc(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -180,60 +161,48 @@ async def ruc(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Obtener el argumento del mensaje
     ruc_number = context.args[0] if context.args else None
     first_name = update.effective_user.first_name
-    user_id = update.effective_user.id
 
-    if not verificar_registro(user_id):
-        await update.message.reply_text("Por favor ingresa el comando /me para reguistarce")
+
+    if ruc_number is None or not re.match(r'^\d{11}$', ruc_number):
+        await update.message.reply_text("Por favor ingresa un RUC válido.")
     else:
-        if ruc_number is None or not re.match(r'^\d{11}$', ruc_number):
-            await update.message.reply_text("Por favor ingresa un RUC válido.")
-        else:
-            # Consulta a la API para obtener la información del RUC
-            warnings.simplefilter('ignore', InsecureRequestWarning)
-            url = f"https://api.apis.net.pe/v1/ruc?numero={ruc_number}"
-            headers = {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                # Reemplazar TU_TOKEN con tu token de acceso
-                'Authorization': 'Bearer apis-token-1.aTSI1U7KEuT-6bbbCguH-4Y8TI6KS73N'
-            }
-            response = requests.get(url, headers=headers, verify=False, proxies=None)
-
-            # Procesar la respuesta de la API
-            if response.status_code == 200:
-                persona = response.json()
-                if persona:
-                    # Construir el mensaje con la información obtenida
-                    message = (
-                        f"[Desarrollador](https://t.me/CodexPE) - [Codex Bot]\n\n"
-                        f"*Información del RUC {ruc_number}:*\n"
-                        f"Nombres Completos: * {persona.get('nombre', '')}*\n"
-                        f"Estado: *{persona.get('estado', '')}*\n"
-                        f"Condicion: *{persona.get('condicion', '')}*\n"
-                        f"Direccion: *{persona.get('direccion', '')}*\n"
-                        f"Direccion: *{persona.get('direccion', '')} - ({persona.get('viaNombre', '')})*\n"
-                        f"Distrito: *{persona.get('distrito', '')}*\n"
-                        f"Provincia: *{persona.get('provincia', '')}*\n"
-                        f"Departamento: *{persona.get('departamento', '')}*\n"
-                        f"Ubigeo: *{persona.get('ubigeo', '')}*\n\n"
-                        f"By: {first_name}"
-                    )
-                    print(f"\nEl usuario: {first_name}\nBusco el RUC: {ruc_number}")
+        # Consulta a la API para obtener la información del RUC
+        url = f"https://api.apis.net.pe/v1/ruc?numero={ruc_number}"
+        headers = {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            # Reemplazar TU_TOKEN con tu token de acceso
+            'Authorization': 'Bearer apis-token-1.aTSI1U7KEuT-6bbbCguH-4Y8TI6KS73N'
+        }
+        response = requests.get(url, headers=headers, verify=False)
+        
+        # Procesar la respuesta de la API
+        if response.status_code == 200:
+            persona = response.json()
+            if persona:
+                # Construir el mensaje con la información obtenida
+                message = (
+                    f"[Desarrollador](https://t.me/CodexPE) | [Codex Bot]\n\n"
+                    f"*Información del RUC {ruc_number}:*\n"
+                    f"Nombres Completos: * {persona.get('nombre', '')}*\n"
+                    f"Estado: *{persona.get('estado', '')}*\n"
+                    f"Condicion: *{persona.get('condicion', '')}*\n"
+                    f"Direccion: *{persona.get('direccion', '')}*\n"
+                    f"Direccion: *{persona.get('direccion', '')} - ({persona.get('viaNombre', '')})*\n"
+                    f"Distrito: *{persona.get('distrito', '')}*\n"
+                    f"Provincia: *{persona.get('provincia', '')}*\n"
+                    f"Departamento: *{persona.get('departamento', '')}*\n"
+                    f"Ubigeo: *{persona.get('ubigeo', '')}*\n\n"
+                    f"By: {first_name}"
                     
-                else:
-                    message = "No se encontraron datos para el RUC proporcionado."
+                )
             else:
-                message = "Hubo un error al obtener la información del RUC. Por favor, intenta nuevamente más tarde."
+                message = "No se encontraron datos para el RUC proporcionado."
+        else:
+            message = "Hubo un error al obtener la información del RUC. Por favor, intenta nuevamente más tarde."
 
-            await update.message.reply_text(message, parse_mode='Markdown')
+        await update.message.reply_text(message, parse_mode='Markdown')
 
-if os.getenv("BOT_RUNNING"):
-    print("¡Ya hay una instancia del bot en ejecución!")
-    print("Si no es así, asegúrate de reiniciar tus servicios en Render.")
-    exit()
-
-# Configurar la variable de entorno BOT_RUNNING para indicar que el bot está en funcionamiento
-os.environ["BOT_RUNNING"] = "True"
 
 app = ApplicationBuilder().token(
     "7080590731:AAHbuMhLFzfei7xB8jSGg5_bj1oEX7GHZmI").build()
@@ -244,10 +213,5 @@ app.add_handler(CommandHandler("cmds", cmds))
 app.add_handler(CommandHandler("dni", dni))
 app.add_handler(CommandHandler("ruc", ruc))
 
-# Crear el archivo bot.lock
-#with open(lock_file_path, "w") as lock_file:
-#    pass
 
 app.run_polling()
-
-os.environ["BOT_RUNNING"] = "False"
